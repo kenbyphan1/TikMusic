@@ -53,50 +53,52 @@ struct SettingsView: View {
 
     private var storageSection: some View {
         Section(
+            content: {
+                HStack {
+                    Label("Dung lượng cache", systemImage: "internaldrive")
+                    Spacer()
+                    Text(viewModel.cacheSizeText)
+                        .foregroundStyle(.secondary)
+                }
+
+                Button("Xoá cache", systemImage: "trash") {
+                    viewModel.clearCache()
+                }
+                .foregroundStyle(.red)
+            },
             header: { Text("Bộ nhớ") },
             footer: { Text("Xoá ảnh đã lưu để giải phóng dung lượng. Ứng dụng sẽ tải lại ảnh khi cần.") }
-        ) {
-            HStack {
-                Label("Dung lượng cache", systemImage: "internaldrive")
-                Spacer()
-                Text(viewModel.cacheSizeText)
-                    .foregroundStyle(.secondary)
-            }
-
-            Button("Xoá cache", systemImage: "trash") {
-                viewModel.clearCache()
-            }
-            .foregroundStyle(.red)
-        }
+        )
     }
 
     // MARK: - API Key
 
     private var apiKeySection: some View {
         Section(
+            content: {
+                HStack {
+                    Label("Trạng thái", systemImage: "key.fill")
+                    Spacer()
+                    Text(viewModel.isAPIKeyConfigured ? "Đã cấu hình" : "Chưa cấu hình")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(viewModel.isAPIKeyConfigured ? .green : .red)
+                }
+
+                NavigationLink {
+                    APIKeyView(viewModel: viewModel)
+                } label: {
+                    Label("Quản lý API Key", systemImage: "gearshape")
+                }
+
+                if viewModel.hasRuntimeKey {
+                    Button("Xoá API Key đã lưu", systemImage: "xmark.circle", role: .destructive) {
+                        viewModel.resetRuntimeKey()
+                    }
+                }
+            },
             header: { Text("API Key") },
             footer: { Text("API Key được đọc từ Config.xcconfig khi build, hoặc nhập trực tiếp tại đây (lưu trong Keychain). Không bao giờ hardcode trong mã nguồn.") }
-        ) {
-            HStack {
-                Label("Trạng thái", systemImage: "key.fill")
-                Spacer()
-                Text(viewModel.isAPIKeyConfigured ? "Đã cấu hình" : "Chưa cấu hình")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(viewModel.isAPIKeyConfigured ? .green : .red)
-            }
-
-            NavigationLink {
-                APIKeyView(viewModel: viewModel)
-            } label: {
-                Label("Quản lý API Key", systemImage: "gearshape")
-            }
-
-            if viewModel.hasRuntimeKey {
-                Button("Xoá API Key đã lưu", systemImage: "xmark.circle", role: .destructive) {
-                    viewModel.resetRuntimeKey()
-                }
-            }
-        }
+        )
     }
 
     // MARK: - Về TikMusic
