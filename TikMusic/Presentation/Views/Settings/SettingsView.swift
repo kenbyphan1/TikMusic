@@ -52,7 +52,7 @@ struct SettingsView: View {
     // MARK: - Bộ nhớ
 
     private var storageSection: some View {
-        Section("Bộ nhớ") {
+        Section("Bộ nhớ", content: {
             HStack {
                 Label("Dung lượng cache", systemImage: "internaldrive")
                 Spacer()
@@ -64,15 +64,15 @@ struct SettingsView: View {
                 viewModel.clearCache()
             }
             .foregroundStyle(.red)
-        } footer: {
+        }, footer: {
             Text("Xoá ảnh đã lưu để giải phóng dung lượng. Ứng dụng sẽ tải lại ảnh khi cần.")
-        }
+        })
     }
 
     // MARK: - API Key
 
     private var apiKeySection: some View {
-        Section("API Key") {
+        Section("API Key", content: {
             HStack {
                 Label("Trạng thái", systemImage: "key.fill")
                 Spacer()
@@ -92,9 +92,9 @@ struct SettingsView: View {
                     viewModel.resetRuntimeKey()
                 }
             }
-        } footer: {
+        }, footer: {
             Text("API Key được đọc từ Config.xcconfig khi build, hoặc nhập trực tiếp tại đây (lưu trong Keychain). Không bao giờ hardcode trong mã nguồn.")
-        }
+        })
     }
 
     // MARK: - Về TikMusic
