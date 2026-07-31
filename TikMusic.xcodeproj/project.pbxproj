@@ -19,7 +19,7 @@
 /* Begin PBXFileReference section */
 		A00000000000000000000012 /* TikMusic.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TikMusic.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A00000000000000000000013 /* TikMusicTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TikMusicTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		A00000000000000000000040 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+		A00000000000000000000040 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config/Config.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
