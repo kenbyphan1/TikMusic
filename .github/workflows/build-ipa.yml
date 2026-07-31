@@ -23,21 +23,8 @@ jobs:
             printf 'YOUTUBE_API_KEY = YOUR_YOUTUBE_API_KEY\n' > Config/Config.xcconfig
           fi
 
-      - name: Chọn Xcode mới nhất có trên runner
-        run: |
-          XCODE=""
-          for x in $(ls /Applications | grep '^Xcode_[0-9]' | sort -V | tail -6); do
-            echo "Trying /Applications/$x"
-            if sudo xcode-select -s "/Applications/$x" 2>/dev/null; then
-              XCODE="/Applications/$x"
-              echo "Selected $XCODE"
-              break
-            fi
-          done
-          if [ -z "$XCODE" ]; then
-            echo "Không tìm thấy Xcode phiên bản nào - dùng mặc định"
-          fi
-          xcodebuild -version
+      - name: Xcode mặc định của runner (project viết cho Xcode 16)
+        run: xcodebuild -version
 
       - name: Archive (không ký — để Sideloadly/AltStore ký bằng Apple ID của bạn)
         run: |
@@ -48,10 +35,11 @@ jobs:
                      -sdk iphoneos \
                      -destination 'generic/platform=iOS' \
                      -derivedDataPath DerivedData \
-                     CODE_SIGNING_ALLOWED=NO \
-                     CODE_SIGNING_REQUIRED=NO \
-                     CODE_SIGN_IDENTITY="" \
-                     archive -archivePath Build/TikMusic.xcarchive 2>&1 | tee build.log
+                      CODE_SIGNING_ALLOWED=NO \
+                      CODE_SIGNING_REQUIRED=NO \
+                      CODE_SIGN_IDENTITY="" \
+                      SUPPORTED_PLATFORMS=iphoneos \
+                      archive -archivePath Build/TikMusic.xcarchive 2>&1 | tee build.log
 
       - name: Tạo IPA (Payload/TikMusic.app)
         run: |
