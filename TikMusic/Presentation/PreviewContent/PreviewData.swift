@@ -4,10 +4,12 @@ import Foundation
 enum PreviewData {
 
     /// Store JSON trong bộ nhớ (dùng cho preview — không ghi ra đĩa).
+    @MainActor
     static var previewPlaylistRepository: FilePlaylistRepository {
         FilePlaylistRepository(store: JSONFileStore(inMemory: "preview-playlists.json"))
     }
 
+    @MainActor
     static var previewFavoritesRepository: FileFavoritesRepository {
         FileFavoritesRepository(store: JSONFileStore(inMemory: "preview-favorites.json"))
     }
