@@ -81,7 +81,7 @@ extension View {
 #Preview {
     VStack(spacing: 16) {
         SkeletonView(height: 16)
-        SkeletonView(height: 16, cornerRadius: 8)
+        SkeletonView(cornerRadius: 8, height: 16)
         SkeletonImageBlock()
     }
     .padding()

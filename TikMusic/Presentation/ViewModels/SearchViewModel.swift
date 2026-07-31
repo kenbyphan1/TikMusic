@@ -71,8 +71,8 @@ final class SearchViewModel {
     /// Binding cho ô nhập từ khoá (dùng trong TextField).
     var queryBinding: Binding<String> {
         Binding(
-            get: { query },
-            set: { updateQuery($0) }
+            get: { self.query },
+            set: { self.updateQuery($0) }
         )
     }
 

@@ -57,8 +57,8 @@ final class HomeViewModel {
     /// Binding cho chủ đề đang chọn (dùng trong CategoryCarouselView).
     var selectedCategoryBinding: Binding<MusicCategory> {
         Binding(
-            get: { selectedCategory },
-            set: { select($0) }
+            get: { self.selectedCategory },
+            set: { self.select($0) }
         )
     }
 

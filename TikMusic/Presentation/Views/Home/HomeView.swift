@@ -191,7 +191,7 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     SkeletonImageBlock()
                     SkeletonView(height: 14)
-                    SkeletonView(height: 12, cornerRadius: 6)
+                    SkeletonView(cornerRadius: 6, height: 12)
                 }
             }
         }

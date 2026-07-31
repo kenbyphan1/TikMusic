@@ -107,8 +107,9 @@ final class ImageCache {
     private func store(_ image: UIImage, for url: URL) {
         storeInMemory(image, for: url)
         // Nén xuống còn 80% chất lượng để tiết kiệm dung lượng đĩa.
-        let data = image.jpegData(compressionQuality: 0.8) ?? image.pngData()
-        disk?.set(data, forKey: url.absoluteString)
+        if let data = image.jpegData(compressionQuality: 0.8) ?? image.pngData() {
+            disk?.set(data, forKey: url.absoluteString)
+        }
     }
 
     /// Lưu ảnh vào RAM với chi phí ước tính theo kích thước điểm ảnh.

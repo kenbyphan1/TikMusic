@@ -15,7 +15,7 @@ enum NetworkLogger {
            let bodyString = String(data: body, encoding: .utf8) {
             output += "Body: \(bodyString)\n"
         }
-        AppLogger.network(output)
+        AppLogger.network.log("\(output, privacy: .public)")
     }
 
     /// Ghi log một response (status, URL, dung lượng dữ liệu).
@@ -24,11 +24,11 @@ enum NetworkLogger {
         var output = "\n========== RESPONSE ==========\n"
         output += "Status: \(status) | \(response.url?.absoluteString ?? "nil")\n"
         output += "Data: \(data.count) bytes\n"
-        AppLogger.network(output)
+        AppLogger.network.log("\(output, privacy: .public)")
     }
 
     /// Ghi log một lỗi kèm số lần thử.
     static func logError(_ error: Error, attempt: Int) {
-        AppLogger.network("Attempt \(attempt + 1) failed: \(error.localizedDescription)")
+        AppLogger.network.log("Attempt \(attempt + 1) failed: \(error.localizedDescription, privacy: .public)")
     }
 }

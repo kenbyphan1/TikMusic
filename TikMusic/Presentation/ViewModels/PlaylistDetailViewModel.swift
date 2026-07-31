@@ -60,8 +60,8 @@ final class PlaylistDetailViewModel {
     /// Binding cho tên playlist (dùng trong TextField đổi tên).
     var playlistNameBinding: Binding<String> {
         Binding(
-            get: { playlistName },
-            set: { updateName($0) }
+            get: { self.playlistName },
+            set: { self.updateName($0) }
         )
     }
 
