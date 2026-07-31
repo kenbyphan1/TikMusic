@@ -43,6 +43,12 @@
 	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<!-- Cho phép kết nối tới máy chủ nội bộ (127.0.0.1) qua HTTP để phát video -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 	<!-- YouTube Data API Key. Giá trị được thay thế từ build setting YOUTUBE_API_KEY (Config.xcconfig) -->
 	<key>YOUTUBE_API_KEY</key>
 	<string>$(YOUTUBE_API_KEY)</string>

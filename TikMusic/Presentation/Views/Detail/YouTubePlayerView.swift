@@ -3,12 +3,11 @@ import WebKit
 
 /// Trình phát YouTube nhúng (embed) dựa trên WKWebView.
 ///
-/// Không cần SDK của YouTube. Load trực tiếp URL `/embed/<id>` kèm
-/// HTTP header `Referer: https://www.youtube.com` — WKWebView không
-/// tự gửi Referer hợp lệ (origin của app không phải HTTPS), nên phải
-/// gán thủ công để YouTube chấp nhận cấu hình player. Tránh lỗi
-/// 153 "Video player configuration error" và 152-4 "This video is
-/// not available" trên iOS.
+/// Không cần SDK của YouTube. Trang embed được phục vụ từ `EmbedServer`
+/// chạy trên `http://127.0.0.1:<port>` — một origin HTTP thật — nên
+/// WKWebView tự gắn header `Referer` hợp lệ khi iframe gọi YouTube.
+/// Nhờ đó tránh được lỗi 153 "Video player configuration error" và
+/// 152-4 "This video is not available" trên iOS.
 struct YouTubePlayerView: UIViewRepresentable {
 
     /// ID video trên YouTube.
@@ -32,48 +31,46 @@ struct YouTubePlayerView: UIViewRepresentable {
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
-        let coordinator = context.coordinator
-
-        // Chỉ (re)load khi video hoặc trạng thái autoplay thay đổi.
-        guard coordinator.loadedVideoID != videoID || coordinator.loadedAutoPlay != autoPlay else {
-            return
-        }
-
-        guard let url = Self.embedURL(videoID: videoID, autoPlay: autoPlay) else {
-            coordinator.loadedVideoID = videoID
-            coordinator.loadedAutoPlay = autoPlay
-            return
-        }
-
-        var request = URLRequest(url: url)
-        // Referer hợp lệ giúp YouTube xác minh embedder → hết lỗi 153/152-4.
-        request.setValue("https://www.youtube.com", forHTTPHeaderField: "Referer")
-        webView.load(request)
-
-        coordinator.loadedVideoID = videoID
-        coordinator.loadedAutoPlay = autoPlay
+        context.coordinator.load(videoID: videoID, autoPlay: autoPlay, into: webView)
     }
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
     }
 
-    /// Coordinator theo dõi trạng thái điều hướng của web view.
+    /// Coordinator chịu trách nhiệm (re)load video và chờ server sẵn sàng.
     final class Coordinator: NSObject, WKNavigationDelegate {
-        /// Video đã load gần nhất (tránh reload lại liên tục).
-        var loadedVideoID: String?
-        var loadedAutoPlay = false
+        /// Video đã load gần nhất (tránh reload liên tục).
+        private var loadedVideoID: String?
+        private var loadedAutoPlay = false
+
+        func load(videoID: String, autoPlay: Bool, into webView: WKWebView) {
+            guard loadedVideoID != videoID || loadedAutoPlay != autoPlay else { return }
+            loadedVideoID = videoID
+            loadedAutoPlay = autoPlay
+            loadURL(videoID: videoID, autoPlay: autoPlay, into: webView)
+        }
+
+        /// Load embed từ server nội bộ. Nếu server chưa sẵn sàng thì thử lại.
+        private func loadURL(videoID: String, autoPlay: Bool, into webView: WKWebView) {
+            guard let baseURL = EmbedServer.shared.baseURL else {
+                // Server chưa mở xong cổng — thử lại sau một khoảng ngắn.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self, weak webView] in
+                    guard let self, let webView else { return }
+                    self.loadURL(videoID: videoID, autoPlay: autoPlay, into: webView)
+                }
+                return
+            }
+
+            let autoplayParam = autoPlay ? "autoplay=1" : ""
+            let path = "/embed/\(videoID)" + (autoplayParam.isEmpty ? "" : "?\(autoplayParam)")
+            guard let url = URL(string: path, relativeTo: baseURL) else { return }
+            webView.load(URLRequest(url: url))
+        }
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
             AppLogger.error("YouTubePlayer load lỗi: \(error.localizedDescription)")
         }
-    }
-
-    /// URL embed video YouTube, kèm các tham số trình phát cơ bản.
-    private static func embedURL(videoID: String, autoPlay: Bool) -> URL? {
-        let autoplay = autoPlay ? "1" : "0"
-        let query = "autoplay=\(autoplay)&playsinline=1&rel=0&modestbranding=1&controls=1"
-        return URL(string: "https://www.youtube.com/embed/\(videoID)?\(query)")
     }
 }
 

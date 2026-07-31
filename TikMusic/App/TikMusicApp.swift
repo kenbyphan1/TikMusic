@@ -10,6 +10,9 @@ struct TikMusicApp: App {
     @State private var container: DependencyContainer
 
     init() {
+        // Khởi động server nội bộ để phát video YouTube trong app
+        // (phục vụ trang embed từ origin HTTP thật → tránh lỗi 153/152-4).
+        EmbedServer.shared.start()
         _container = State(initialValue: DependencyContainer())
     }
 
