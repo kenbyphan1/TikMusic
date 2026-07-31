@@ -69,10 +69,11 @@ final class SwiftDataFavoritesRepository: FavoritesRepositoryProtocol {
 
     /// Tìm `FavoriteVideoRecord` theo videoID.
     private func favoriteRecord(videoID: String) throws -> FavoriteVideoRecord? {
-        let predicate = #Predicate<FavoriteVideoRecord> { $0.videoID == videoID }
-        var descriptor = FetchDescriptor<FavoriteVideoRecord>(predicate: predicate)
-        descriptor.fetchLimit = 1
-        return try context.fetch(descriptor).first
+        // Tránh dùng `#Predicate` (có thể crash trên một số phiên bản OS
+        // khi app build bằng SDK cũ hơn) — lọc trực tiếp trong bộ nhớ.
+        let descriptor = FetchDescriptor<FavoriteVideoRecord>()
+        let records = try context.fetch(descriptor)
+        return records.first { $0.videoID == videoID }
     }
 
     /// Chuyển `FavoriteVideoRecord` sang `MusicVideo` domain.

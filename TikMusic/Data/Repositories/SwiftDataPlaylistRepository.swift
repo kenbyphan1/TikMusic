@@ -95,10 +95,11 @@ final class SwiftDataPlaylistRepository: PlaylistRepositoryProtocol {
 
     /// Tìm `PlaylistRecord` theo id.
     private func playlistRecord(id: UUID) throws -> PlaylistRecord? {
-        let predicate = #Predicate<PlaylistRecord> { $0.id == id }
-        var descriptor = FetchDescriptor<PlaylistRecord>(predicate: predicate)
-        descriptor.fetchLimit = 1
-        return try context.fetch(descriptor).first
+        // Tránh dùng `#Predicate` (có thể crash trên một số phiên bản OS
+        // khi app build bằng SDK cũ hơn) — lọc trực tiếp trong bộ nhớ.
+        let descriptor = FetchDescriptor<PlaylistRecord>()
+        let records = try context.fetch(descriptor)
+        return records.first { $0.id == id }
     }
 
     /// Chuyển `PlaylistRecord` sang `Playlist` domain.
