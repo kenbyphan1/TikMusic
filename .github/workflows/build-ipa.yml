@@ -1,0 +1,63 @@
+name: Build IPA (TikMusic)
+
+# Chạy thủ công từ tab Actions, hoặc tự động khi tạo tag v1.x.x
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Đảm bảo Config.xcconfig tồn tại (file này bị gitignore)
+        run: |
+          mkdir -p Config
+          if [ ! -f Config/Config.xcconfig ]; then
+            printf 'YOUTUBE_API_KEY = YOUR_YOUTUBE_API_KEY\n' > Config/Config.xcconfig
+          fi
+
+      - name: Chọn Xcode 16
+        run: sudo xcode-select -s /Applications/Xcode_16.2.app
+        continue-on-error: true
+
+      - name: Archive (không ký — để Sideloadly/AltStore ký bằng Apple ID của bạn)
+        run: |
+          set -o pipefail
+          xcodebuild -project TikMusic.xcodeproj \
+                     -scheme TikMusic \
+                     -configuration Release \
+                     -sdk iphoneos \
+                     -destination 'generic/platform=iOS' \
+                     -derivedDataPath DerivedData \
+                     CODE_SIGNING_ALLOWED=NO \
+                     CODE_SIGNING_REQUIRED=NO \
+                     CODE_SIGN_IDENTITY="" \
+                     archive -archivePath Build/TikMusic.xcarchive 2>&1 | tee build.log
+
+      - name: Tạo IPA (Payload/TikMusic.app)
+        run: |
+          APP_PATH="Build/TikMusic.xcarchive/Products/Applications"
+          mkdir -p IPA/Payload
+          cp -R "$APP_PATH/TikMusic.app" IPA/Payload/
+          cd IPA
+          zip -qry ../TikMusic.ipa Payload
+
+      - name: Tải log build lên artifact (nếu build lỗi)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+
+      - name: Đưa IPA lên Release / Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TikMusic-ipa
+          path: TikMusic.ipa

@@ -1,0 +1,36 @@
+# Xcode
+# =====================
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xccheckout
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# Secrets & local config
+# LƯU Ý: Config/Config.xcconfig chứa API Key — nếu bạn muốn giữ bí mật,
+# bỏ dòng dưới khỏi .gitignore để KHÔNG commit file này lên git.
+Config/Config.xcconfig
+
+# macOS / Windows
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Logs
+*.log
