@@ -3,11 +3,12 @@ import WebKit
 
 /// Trình phát YouTube nhúng (embed) dựa trên WKWebView.
 ///
-/// Không cần SDK của YouTube. Dùng một trang HTML proxy nội bộ với
-/// `baseURL` là origin HTTPS hợp lệ để WKWebView gửi đúng `Referer`
-/// mà YouTube yêu cầu — tránh lỗi 153 "Video player configuration error"
-/// và 152-4 "This video is not available" trên iOS
-/// (WebView không gửi Referer khi origin không phải HTTPS).
+/// Không cần SDK của YouTube. Load trực tiếp URL `/embed/<id>` kèm
+/// HTTP header `Referer: https://www.youtube.com` — WKWebView không
+/// tự gửi Referer hợp lệ (origin của app không phải HTTPS), nên phải
+/// gán thủ công để YouTube chấp nhận cấu hình player. Tránh lỗi
+/// 153 "Video player configuration error" và 152-4 "This video is
+/// not available" trên iOS.
 struct YouTubePlayerView: UIViewRepresentable {
 
     /// ID video trên YouTube.
@@ -38,9 +39,16 @@ struct YouTubePlayerView: UIViewRepresentable {
             return
         }
 
-        let html = Self.playerHTML(videoID: videoID, autoPlay: autoPlay)
-        // baseURL là origin youtube.com thật → WKWebView gửi Referer hợp lệ.
-        webView.loadHTMLString(html, baseURL: URL(string: "https://www.youtube.com"))
+        guard let url = Self.embedURL(videoID: videoID, autoPlay: autoPlay) else {
+            coordinator.loadedVideoID = videoID
+            coordinator.loadedAutoPlay = autoPlay
+            return
+        }
+
+        var request = URLRequest(url: url)
+        // Referer hợp lệ giúp YouTube xác minh embedder → hết lỗi 153/152-4.
+        request.setValue("https://www.youtube.com", forHTTPHeaderField: "Referer")
+        webView.load(request)
 
         coordinator.loadedVideoID = videoID
         coordinator.loadedAutoPlay = autoPlay
@@ -61,40 +69,11 @@ struct YouTubePlayerView: UIViewRepresentable {
         }
     }
 
-    /// Tạo HTML proxy nhúng iframe YouTube.
-    ///
-    /// Quan trọng: iframe phải trỏ thẳng vào `www.youtube.com/embed/...`
-    /// (KHÔNG phải youtube-nocookie.com) và KHÔNG kèm tham số `origin`
-    /// hay `enablejsapi`. `baseURL` khi load phải là origin `https://www.youtube.com`
-    /// thật — nhờ đó WKWebView gửi đúng `Referer`, YouTube chấp nhận
-    /// cấu hình player (hết lỗi 153/152-4).
-    private static func playerHTML(videoID: String, autoPlay: Bool) -> String {
+    /// URL embed video YouTube, kèm các tham số trình phát cơ bản.
+    private static func embedURL(videoID: String, autoPlay: Bool) -> URL? {
         let autoplay = autoPlay ? "1" : "0"
-
-        return """
-        <!DOCTYPE html>
-        <html>
-        <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-        <meta name="referrer" content="strict-origin-when-cross-origin">
-        <style>
-        html, body { margin: 0; padding: 0; background: transparent; height: 100%; overflow: hidden; }
-        #player { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
-        </style>
-        </head>
-        <body>
-        <iframe
-          id="player"
-          frameborder="0"
-          allowfullscreen
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          referrerpolicy="strict-origin-when-cross-origin"
-          src="https://www.youtube.com/embed/\(videoID)?autoplay=\(autoplay)&playsinline=1&rel=0&modestbranding=1&controls=1"
-        ></iframe>
-        </body>
-        </html>
-        """
+        let query = "autoplay=\(autoplay)&playsinline=1&rel=0&modestbranding=1&controls=1"
+        return URL(string: "https://www.youtube.com/embed/\(videoID)?\(query)")
     }
 }
 
