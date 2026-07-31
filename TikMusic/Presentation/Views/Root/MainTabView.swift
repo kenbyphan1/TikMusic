@@ -39,6 +39,6 @@ struct MainTabView: View {
 }
 
 #Preview {
-    MainTabView(container: DependencyContainer(modelContainer: PreviewData.container))
-        .environment(DependencyContainer(modelContainer: PreviewData.container))
+    MainTabView(container: DependencyContainer())
+        .environment(DependencyContainer())
 }

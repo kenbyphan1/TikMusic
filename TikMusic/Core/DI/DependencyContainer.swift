@@ -1,6 +1,5 @@
 import Foundation
 import Observation
-import SwiftData
 
 /// Container tiêm phụ thuộc (Dependency Injection) cho toàn bộ ứng dụng.
 ///
@@ -29,10 +28,10 @@ final class DependencyContainer {
     /// Repository video từ YouTube Data API.
     let videoRepository: VideoRepositoryProtocol
 
-    /// Repository playlist cục bộ (SwiftData).
+    /// Repository playlist cục bộ (file JSON).
     let playlistRepository: PlaylistRepositoryProtocol
 
-    /// Repository yêu thích cục bộ (SwiftData).
+    /// Repository yêu thích cục bộ (file JSON).
     let favoritesRepository: FavoritesRepositoryProtocol
 
     // MARK: - Use cases
@@ -51,9 +50,7 @@ final class DependencyContainer {
     let settingsViewModel: SettingsViewModel
 
     /// Khởi tạo toàn bộ đồ thị phụ thuộc.
-    ///
-    /// - Parameter modelContainer: `ModelContainer` của SwiftData.
-    init(modelContainer: ModelContainer) {
+    init() {
         // Services
         let apiKeyProvider = APIKeyProvider()
         let colorSchemeManager = ColorSchemeManager()
@@ -63,10 +60,9 @@ final class DependencyContainer {
         let apiClient = APIClient(session: URLSession.shared)
 
         // Repositories
-        let context = modelContainer.mainContext
         let videoRepository = YouTubeVideoRepository(client: apiClient, apiKeyProvider: apiKeyProvider)
-        let playlistRepository = SwiftDataPlaylistRepository(context: context)
-        let favoritesRepository = SwiftDataFavoritesRepository(context: context)
+        let playlistRepository = FilePlaylistRepository()
+        let favoritesRepository = FileFavoritesRepository()
 
         // Use cases
         let fetchVideosUseCase = FetchVideosUseCase(repository: videoRepository)

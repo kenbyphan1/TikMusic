@@ -165,8 +165,8 @@ struct FavoritesView: View {
 #Preview {
     FavoritesView(viewModel: FavoritesViewModel(
         favoritesUseCase: FavoritesUseCase(
-            repository: SwiftDataFavoritesRepository(context: PreviewData.container.mainContext)
+            repository: PreviewData.previewFavoritesRepository
         )
     ))
-    .environment(DependencyContainer(modelContainer: PreviewData.container))
+    .environment(DependencyContainer())
 }

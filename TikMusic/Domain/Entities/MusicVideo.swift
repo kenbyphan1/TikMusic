@@ -4,7 +4,7 @@ import Foundation
 ///
 /// Đây là model trung gian mà toàn bộ ứng dụng (UI, UseCase, Repository)
 /// sử dụng — độc lập hoàn toàn với DTO của YouTube.
-struct MusicVideo: Identifiable, Hashable, Sendable {
+struct MusicVideo: Identifiable, Hashable, Codable, Sendable {
     /// ID video trên YouTube.
     let id: String
 

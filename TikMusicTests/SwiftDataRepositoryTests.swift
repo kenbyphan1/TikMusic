@@ -1,20 +1,16 @@
 import XCTest
-import SwiftData
 @testable import TikMusic
 
-/// Unit test cho SwiftDataPlaylistRepository và SwiftDataFavoritesRepository
-/// sử dụng ModelContainer in-memory.
-final class SwiftDataRepositoryTests: XCTestCase {
+/// Unit test cho FilePlaylistRepository và FileFavoritesRepository
+/// sử dụng JSONFileStore in-memory.
+final class FileRepositoryTests: XCTestCase {
 
-    /// Container in-memory dùng riêng cho mỗi test.
-    private func makeContainer() throws -> ModelContainer {
-        let schema = Schema([
-            PlaylistRecord.self,
-            PlaylistItemRecord.self,
-            FavoriteVideoRecord.self,
-        ])
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-        return try ModelContainer(for: schema, configurations: [configuration])
+    private func makePlaylistRepository() -> FilePlaylistRepository {
+        FilePlaylistRepository(store: JSONFileStore(inMemory: "test-playlists-\(UUID().uuidString).json"))
+    }
+
+    private func makeFavoritesRepository() -> FileFavoritesRepository {
+        FileFavoritesRepository(store: JSONFileStore(inMemory: "test-favorites-\(UUID().uuidString).json"))
     }
 
     private func makeVideo(id: String, title: String = "Bài hát test") -> MusicVideo {
@@ -31,8 +27,7 @@ final class SwiftDataRepositoryTests: XCTestCase {
 
     @MainActor
     func testCreateAndFetchPlaylist() throws {
-        let container = try makeContainer()
-        let repository = SwiftDataPlaylistRepository(context: container.mainContext)
+        let repository = makePlaylistRepository()
 
         let playlist = try repository.createPlaylist(name: "Nhạc yêu thích")
 
@@ -44,8 +39,7 @@ final class SwiftDataRepositoryTests: XCTestCase {
 
     @MainActor
     func testRenamePlaylist() throws {
-        let container = try makeContainer()
-        let repository = SwiftDataPlaylistRepository(context: container.mainContext)
+        let repository = makePlaylistRepository()
 
         let playlist = try repository.createPlaylist(name: "Cũ")
         try repository.renamePlaylist(id: playlist.id, to: "Mới")
@@ -55,8 +49,7 @@ final class SwiftDataRepositoryTests: XCTestCase {
 
     @MainActor
     func testDeletePlaylistRemovesItems() throws {
-        let container = try makeContainer()
-        let repository = SwiftDataPlaylistRepository(context: container.mainContext)
+        let repository = makePlaylistRepository()
 
         let playlist = try repository.createPlaylist(name: "Playlist")
         try repository.addVideo(makeVideo(id: "v1"), toPlaylist: playlist.id)
@@ -68,8 +61,7 @@ final class SwiftDataRepositoryTests: XCTestCase {
 
     @MainActor
     func testAddVideoToPlaylist() throws {
-        let container = try makeContainer()
-        let repository = SwiftDataPlaylistRepository(context: container.mainContext)
+        let repository = makePlaylistRepository()
 
         let playlist = try repository.createPlaylist(name: "P1")
         try repository.addVideo(makeVideo(id: "v1"), toPlaylist: playlist.id)
@@ -82,8 +74,7 @@ final class SwiftDataRepositoryTests: XCTestCase {
 
     @MainActor
     func testAddVideoDeduplicates() throws {
-        let container = try makeContainer()
-        let repository = SwiftDataPlaylistRepository(context: container.mainContext)
+        let repository = makePlaylistRepository()
 
         let playlist = try repository.createPlaylist(name: "P1")
         try repository.addVideo(makeVideo(id: "v1"), toPlaylist: playlist.id)
@@ -94,8 +85,7 @@ final class SwiftDataRepositoryTests: XCTestCase {
 
     @MainActor
     func testRemoveVideoFromPlaylist() throws {
-        let container = try makeContainer()
-        let repository = SwiftDataPlaylistRepository(context: container.mainContext)
+        let repository = makePlaylistRepository()
 
         let playlist = try repository.createPlaylist(name: "P1")
         try repository.addVideo(makeVideo(id: "v1"), toPlaylist: playlist.id)
@@ -109,8 +99,7 @@ final class SwiftDataRepositoryTests: XCTestCase {
 
     @MainActor
     func testSetVideoOrder() throws {
-        let container = try makeContainer()
-        let repository = SwiftDataPlaylistRepository(context: container.mainContext)
+        let repository = makePlaylistRepository()
 
         let playlist = try repository.createPlaylist(name: "P1")
         try repository.addVideo(makeVideo(id: "v1", title: "A"), toPlaylist: playlist.id)
@@ -128,8 +117,7 @@ final class SwiftDataRepositoryTests: XCTestCase {
 
     @MainActor
     func testAddAndFetchFavorite() throws {
-        let container = try makeContainer()
-        let repository = SwiftDataFavoritesRepository(context: container.mainContext)
+        let repository = makeFavoritesRepository()
 
         try repository.addFavorite(makeVideo(id: "v1"))
         try repository.addFavorite(makeVideo(id: "v2"))
@@ -142,8 +130,7 @@ final class SwiftDataRepositoryTests: XCTestCase {
 
     @MainActor
     func testAddFavoriteDeduplicates() throws {
-        let container = try makeContainer()
-        let repository = SwiftDataFavoritesRepository(context: container.mainContext)
+        let repository = makeFavoritesRepository()
 
         try repository.addFavorite(makeVideo(id: "v1"))
         try repository.addFavorite(makeVideo(id: "v1"))
@@ -153,8 +140,7 @@ final class SwiftDataRepositoryTests: XCTestCase {
 
     @MainActor
     func testRemoveFavorite() throws {
-        let container = try makeContainer()
-        let repository = SwiftDataFavoritesRepository(context: container.mainContext)
+        let repository = makeFavoritesRepository()
 
         try repository.addFavorite(makeVideo(id: "v1"))
         try repository.removeFavorite(videoID: "v1")
@@ -164,8 +150,7 @@ final class SwiftDataRepositoryTests: XCTestCase {
 
     @MainActor
     func testRemoveAllFavorites() throws {
-        let container = try makeContainer()
-        let repository = SwiftDataFavoritesRepository(context: container.mainContext)
+        let repository = makeFavoritesRepository()
 
         try repository.addFavorite(makeVideo(id: "v1"))
         try repository.addFavorite(makeVideo(id: "v2"))
@@ -176,10 +161,9 @@ final class SwiftDataRepositoryTests: XCTestCase {
 
     @MainActor
     func testFavoriteFetchOrderNewestFirst() throws {
-        let container = try makeContainer()
-        let repository = SwiftDataFavoritesRepository(context: container.mainContext)
+        let repository = makeFavoritesRepository()
 
-        // addedAt tự tăng theo thời gian; thêm tuần tự → v2 mới hơn.
+        // Thêm tuần tự → v2 mới hơn (fetch trả về mới nhất trước).
         try repository.addFavorite(makeVideo(id: "v1"))
         Thread.sleep(forTimeInterval: 0.01)
         try repository.addFavorite(makeVideo(id: "v2"))

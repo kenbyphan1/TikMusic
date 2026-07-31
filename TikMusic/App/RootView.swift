@@ -18,5 +18,5 @@ struct RootView: View {
 }
 
 #Preview {
-    RootView(container: DependencyContainer(modelContainer: PreviewData.container))
+    RootView(container: DependencyContainer())
 }

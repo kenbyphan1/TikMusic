@@ -42,8 +42,8 @@ struct CreatePlaylistView: View {
 #Preview {
     CreatePlaylistView(viewModel: PlaylistListViewModel(
         playlistUseCase: PlaylistUseCase(
-            repository: SwiftDataPlaylistRepository(context: PreviewData.container.mainContext)
+            repository: PreviewData.previewPlaylistRepository
         )
     ))
-    .environment(DependencyContainer(modelContainer: PreviewData.container))
+    .environment(DependencyContainer())
 }

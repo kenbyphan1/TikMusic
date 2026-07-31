@@ -1,23 +1,16 @@
 import Foundation
-import SwiftData
 
 /// Dữ liệu mẫu dùng trong SwiftUI Preview.
 enum PreviewData {
 
-    /// ModelContainer trong bộ nhớ (không ghi ra đĩa).
-    static let container: ModelContainer = {
-        let schema = Schema([
-            PlaylistRecord.self,
-            PlaylistItemRecord.self,
-            FavoriteVideoRecord.self,
-        ])
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-        do {
-            return try ModelContainer(for: schema, configurations: [configuration])
-        } catch {
-            fatalError("Không thể tạo preview container: \(error)")
-        }
-    }()
+    /// Store JSON trong bộ nhớ (dùng cho preview — không ghi ra đĩa).
+    static var previewPlaylistRepository: FilePlaylistRepository {
+        FilePlaylistRepository(store: JSONFileStore(inMemory: "preview-playlists.json"))
+    }
+
+    static var previewFavoritesRepository: FileFavoritesRepository {
+        FileFavoritesRepository(store: JSONFileStore(inMemory: "preview-favorites.json"))
+    }
 
     /// Một vài video mẫu để xem trước giao diện.
     static let videos: [MusicVideo] = [

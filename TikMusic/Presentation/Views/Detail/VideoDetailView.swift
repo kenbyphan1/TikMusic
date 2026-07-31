@@ -345,12 +345,12 @@ struct VideoDetailView: View {
                 apiKeyProvider: APIKeyProvider()
             ),
             favoritesUseCase: FavoritesUseCase(
-                repository: SwiftDataFavoritesRepository(context: PreviewData.container.mainContext)
+                repository: PreviewData.previewFavoritesRepository
             ),
             playlistUseCase: PlaylistUseCase(
-                repository: SwiftDataPlaylistRepository(context: PreviewData.container.mainContext)
+                repository: PreviewData.previewPlaylistRepository
             )
         ))
     }
-    .environment(DependencyContainer(modelContainer: PreviewData.container))
+    .environment(DependencyContainer())
 }

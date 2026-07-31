@@ -264,5 +264,5 @@ struct SearchView: View {
         searchHistoryStore: SearchHistoryStore(),
         apiKeyProvider: APIKeyProvider()
     ))
-    .environment(DependencyContainer(modelContainer: PreviewData.container))
+    .environment(DependencyContainer())
 }

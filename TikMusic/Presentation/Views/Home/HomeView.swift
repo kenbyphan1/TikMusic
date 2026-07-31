@@ -248,5 +248,5 @@ private enum HomeRoute: Hashable {
         ),
         apiKeyProvider: APIKeyProvider()
     ))
-    .environment(DependencyContainer(modelContainer: PreviewData.container))
+    .environment(DependencyContainer())
 }

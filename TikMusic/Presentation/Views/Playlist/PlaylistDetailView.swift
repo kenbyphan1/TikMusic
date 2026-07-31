@@ -154,9 +154,9 @@ struct PlaylistDetailView: View {
                 videos: PreviewData.videos
             ),
             playlistUseCase: PlaylistUseCase(
-                repository: SwiftDataPlaylistRepository(context: PreviewData.container.mainContext)
+                repository: PreviewData.previewPlaylistRepository
             )
         ))
     }
-    .environment(DependencyContainer(modelContainer: PreviewData.container))
+    .environment(DependencyContainer())
 }

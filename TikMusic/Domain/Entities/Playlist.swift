@@ -1,7 +1,7 @@
 import Foundation
 
 /// Một playlist do người dùng tạo.
-struct Playlist: Identifiable, Hashable {
+struct Playlist: Identifiable, Hashable, Codable {
     let id: UUID
     var name: String
     let createdAt: Date
