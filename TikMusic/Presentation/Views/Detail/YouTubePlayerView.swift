@@ -6,7 +6,8 @@ import WebKit
 /// Không cần SDK của YouTube. Dùng một trang HTML proxy nội bộ với
 /// `baseURL` là origin HTTPS hợp lệ để WKWebView gửi đúng `Referer`
 /// mà YouTube yêu cầu — tránh lỗi 153 "Video player configuration error"
-/// trên iOS (WebView không gửi Referer khi origin không phải HTTPS).
+/// và 152-4 "This video is not available" trên iOS
+/// (WebView không gửi Referer khi origin không phải HTTPS).
 struct YouTubePlayerView: UIViewRepresentable {
 
     /// ID video trên YouTube.
@@ -38,8 +39,8 @@ struct YouTubePlayerView: UIViewRepresentable {
         }
 
         let html = Self.playerHTML(videoID: videoID, autoPlay: autoPlay)
-        // baseURL tạo origin HTTPS hợp lệ → Referer hợp lệ → hết lỗi 153.
-        webView.loadHTMLString(html, baseURL: URL(string: "https://www.youtube.com/"))
+        // baseURL là origin youtube.com thật → WKWebView gửi Referer hợp lệ.
+        webView.loadHTMLString(html, baseURL: URL(string: "https://www.youtube.com"))
 
         coordinator.loadedVideoID = videoID
         coordinator.loadedAutoPlay = autoPlay
@@ -61,10 +62,14 @@ struct YouTubePlayerView: UIViewRepresentable {
     }
 
     /// Tạo HTML proxy nhúng iframe YouTube.
+    ///
+    /// Quan trọng: iframe phải trỏ thẳng vào `www.youtube.com/embed/...`
+    /// (KHÔNG phải youtube-nocookie.com) và KHÔNG kèm tham số `origin`
+    /// hay `enablejsapi`. `baseURL` khi load phải là origin `https://www.youtube.com`
+    /// thật — nhờ đó WKWebView gửi đúng `Referer`, YouTube chấp nhận
+    /// cấu hình player (hết lỗi 153/152-4).
     private static func playerHTML(videoID: String, autoPlay: Bool) -> String {
         let autoplay = autoPlay ? "1" : "0"
-        // src của iframe phải encode tham số origin.
-        let escapedOrigin = "https%3A%2F%2Fwww.youtube.com"
 
         return """
         <!DOCTYPE html>
@@ -81,10 +86,11 @@ struct YouTubePlayerView: UIViewRepresentable {
         <body>
         <iframe
           id="player"
+          frameborder="0"
           allowfullscreen
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           referrerpolicy="strict-origin-when-cross-origin"
-          src="https://www.youtube-nocookie.com/embed/\(videoID)?autoplay=\(autoplay)&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=\(escapedOrigin)&widget_referrer=\(escapedOrigin)"
+          src="https://www.youtube.com/embed/\(videoID)?autoplay=\(autoplay)&playsinline=1&rel=0&modestbranding=1&controls=1"
         ></iframe>
         </body>
         </html>
