@@ -11,6 +11,10 @@ enum YouTubeEndpoint {
     /// Kiểm tra trạng thái video (riêng `part=status` để biết video có
     /// embeddable không — dùng cho Smart Fallback).
     case videoStatus(apiKey: String, ids: [String])
+
+    /// Tìm kiếm video ngắn (Shorts) — thêm `videoDuration=short` để chỉ lấy
+    /// video dưới 4 phút và `videoEmbeddable=true` để lọc video nhúng được.
+    case shortsSearch(apiKey: String, query: String, pageToken: String?, maxResults: Int, regionCode: String, order: String?)
 }
 
 // MARK: - APIEndpoint
@@ -24,7 +28,7 @@ extension YouTubeEndpoint: APIEndpoint {
     /// Đường dẫn tương ứng với từng endpoint.
     var path: String {
         switch self {
-        case .search:
+        case .search, .shortsSearch:
             return "/youtube/v3/search"
         case .videos, .videoStatus:
             return "/youtube/v3/videos"
@@ -69,6 +73,28 @@ extension YouTubeEndpoint: APIEndpoint {
                 URLQueryItem(name: "part", value: "status"),
                 URLQueryItem(name: "id", value: ids.joined(separator: ",")),
             ]
+
+        case .shortsSearch(let apiKey, let query, let pageToken, let maxResults, let regionCode, let order):
+            var items = [
+                URLQueryItem(name: "key", value: apiKey),
+                URLQueryItem(name: "part", value: "snippet"),
+                URLQueryItem(name: "type", value: "video"),
+                URLQueryItem(name: "q", value: query),
+                URLQueryItem(name: "maxResults", value: "\(maxResults)"),
+                URLQueryItem(name: "safeSearch", value: "strict"),
+                URLQueryItem(name: "videoDuration", value: "short"),
+                URLQueryItem(name: "videoEmbeddable", value: "true"),
+            ]
+            if let pageToken {
+                items.append(URLQueryItem(name: "pageToken", value: pageToken))
+            }
+            if !regionCode.isEmpty {
+                items.append(URLQueryItem(name: "regionCode", value: regionCode))
+            }
+            if let order {
+                items.append(URLQueryItem(name: "order", value: order))
+            }
+            return items
         }
     }
 }

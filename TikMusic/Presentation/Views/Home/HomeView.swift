@@ -21,6 +21,9 @@ struct HomeView: View {
     /// Có hiển thị sheet tìm kiếm không.
     @State private var isSearchPresented = false
 
+    /// Có hiển thị feed Short không.
+    @State private var isShortsPresented = false
+
     /// Cột của lưới video (2 cột).
     private let columns = [
         GridItem(.flexible(), spacing: 16),
@@ -63,6 +66,9 @@ struct HomeView: View {
         }
         .fullScreenCover(isPresented: $isSearchPresented) {
             SearchView(viewModel: container.searchViewModel)
+        }
+        .fullScreenCover(isPresented: $isShortsPresented) {
+            ShortsFeedView(viewModel: container.shortsViewModel)
         }
     }
 
@@ -123,7 +129,10 @@ struct HomeView: View {
     private var categoryCarousel: some View {
         CategoryCarouselView(
             categories: viewModel.categories,
-            selection: viewModel.selectedCategoryBinding
+            selection: viewModel.selectedCategoryBinding,
+            shortsAction: {
+                isShortsPresented = true
+            }
         )
     }
 

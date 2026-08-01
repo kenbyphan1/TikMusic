@@ -74,6 +74,57 @@ enum TestFixtures {
 
     static var searchResponseData: Data { Data(searchResponseJSON.utf8) }
 
+    // MARK: - Shorts search response
+
+    static let shortsSearchResponseJSON = """
+    {
+      "kind": "youtube#searchListResponse",
+      "etag": "shorts-etag",
+      "nextPageToken": "SHORTS_NEXT",
+      "regionCode": "US",
+      "pageInfo": {
+        "totalResults": 100000,
+        "resultsPerPage": 2
+      },
+      "items": [
+        {
+          "kind": "youtube#searchResult",
+          "etag": "shorts-item-1",
+          "id": { "kind": "youtube#video", "videoId": "short1111111" },
+          "snippet": {
+            "publishedAt": "2026-03-01T10:00:00Z",
+            "channelId": "UC111",
+            "title": "Dance Challenge #shorts #viral",
+            "description": "Hot dance clip #trending #dance",
+            "thumbnails": {
+              "default": { "url": "https://i.ytimg.com/vi/short1111111/default.jpg", "width": 120, "height": 90 },
+              "medium": { "url": "https://i.ytimg.com/vi/short1111111/mqdefault.jpg", "width": 320, "height": 180 },
+              "high": { "url": "https://i.ytimg.com/vi/short1111111/hqdefault.jpg", "width": 480, "height": 360 }
+            },
+            "channelTitle": "Dance Studio"
+          }
+        },
+        {
+          "kind": "youtube#searchResult",
+          "etag": "shorts-item-2",
+          "id": { "kind": "youtube#video", "videoId": "short2222222" },
+          "snippet": {
+            "publishedAt": "2026-03-02T08:00:00Z",
+            "channelId": "UC222",
+            "title": "Phonk Beat Short",
+            "description": "",
+            "thumbnails": {
+              "medium": { "url": "https://i.ytimg.com/vi/short2222222/mqdefault.jpg" }
+            },
+            "channelTitle": "Phonk Nation"
+          }
+        }
+      ]
+    }
+    """
+
+    static var shortsSearchResponseData: Data { Data(shortsSearchResponseJSON.utf8) }
+
     // MARK: - Videos response (chi tiết)
 
     static let videosResponseJSON = """

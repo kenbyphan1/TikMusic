@@ -26,10 +26,19 @@ final class DependencyContainer {
     /// Cache video thay thế (Smart Fallback).
     let playbackCacheStore: PlaybackCacheStore
 
+    /// Lịch sử xem Short (gần đây + tiếp tục xem).
+    let shortHistoryStore: ShortHistoryStore
+
+    /// Cache metadata Short offline.
+    let shortCacheStore: ShortCacheStore
+
     // MARK: - Repositories
 
     /// Repository video từ YouTube Data API.
     let videoRepository: VideoRepositoryProtocol
+
+    /// Repository Short (video dọc) từ YouTube Data API.
+    let shortRepository: ShortRepositoryProtocol
 
     /// Repository playlist cục bộ (file JSON).
     let playlistRepository: PlaylistRepositoryProtocol
@@ -44,6 +53,7 @@ final class DependencyContainer {
     let playlistUseCase: PlaylistUseCase
     let favoritesUseCase: FavoritesUseCase
     let videoFallbackUseCase: VideoFallbackUseCase
+    let shortsUseCase: ShortsUseCase
 
     // MARK: - ViewModels dùng chung (giữ state xuyên các tab)
 
@@ -52,6 +62,7 @@ final class DependencyContainer {
     let playlistListViewModel: PlaylistListViewModel
     let favoritesViewModel: FavoritesViewModel
     let settingsViewModel: SettingsViewModel
+    let shortsViewModel: ShortsViewModel
 
     /// Khởi tạo toàn bộ đồ thị phụ thuộc.
     init() {
@@ -60,12 +71,19 @@ final class DependencyContainer {
         let colorSchemeManager = ColorSchemeManager()
         let searchHistoryStore = SearchHistoryStore()
         let playbackCacheStore = PlaybackCacheStore(store: JSONFileStore(fileName: "playback-cache.json"))
+        let shortHistoryStore = ShortHistoryStore(store: JSONFileStore(fileName: "shorts-history.json"))
+        let shortCacheStore = ShortCacheStore(store: JSONFileStore(fileName: "shorts-cache.json"))
 
         // Networking
         let apiClient = APIClient(session: URLSession.shared)
 
         // Repositories
         let videoRepository = YouTubeVideoRepository(client: apiClient, apiKeyProvider: apiKeyProvider)
+        let shortRepository = YouTubeShortRepository(
+            client: apiClient,
+            apiKeyProvider: apiKeyProvider,
+            cacheStore: shortCacheStore
+        )
         let playlistRepository = FilePlaylistRepository()
         let favoritesRepository = FileFavoritesRepository()
 
@@ -78,6 +96,7 @@ final class DependencyContainer {
             repository: videoRepository,
             cacheStore: playbackCacheStore
         )
+        let shortsUseCase = ShortsUseCase(repository: shortRepository)
 
         // ViewModels
         let homeViewModel = HomeViewModel(
@@ -95,13 +114,22 @@ final class DependencyContainer {
             colorSchemeManager: colorSchemeManager,
             apiKeyProvider: apiKeyProvider
         )
+        let shortsViewModel = ShortsViewModel(
+            shortsUseCase: shortsUseCase,
+            favoritesUseCase: favoritesUseCase,
+            historyStore: shortHistoryStore,
+            apiKeyProvider: apiKeyProvider
+        )
 
         // Gán vào stored properties
         self.apiKeyProvider = apiKeyProvider
         self.colorSchemeManager = colorSchemeManager
         self.searchHistoryStore = searchHistoryStore
         self.playbackCacheStore = playbackCacheStore
+        self.shortHistoryStore = shortHistoryStore
+        self.shortCacheStore = shortCacheStore
         self.videoRepository = videoRepository
+        self.shortRepository = shortRepository
         self.playlistRepository = playlistRepository
         self.favoritesRepository = favoritesRepository
         self.fetchVideosUseCase = fetchVideosUseCase
@@ -109,11 +137,13 @@ final class DependencyContainer {
         self.playlistUseCase = playlistUseCase
         self.favoritesUseCase = favoritesUseCase
         self.videoFallbackUseCase = videoFallbackUseCase
+        self.shortsUseCase = shortsUseCase
         self.homeViewModel = homeViewModel
         self.searchViewModel = searchViewModel
         self.playlistListViewModel = playlistListViewModel
         self.favoritesViewModel = favoritesViewModel
         self.settingsViewModel = settingsViewModel
+        self.shortsViewModel = shortsViewModel
     }
 
     // MARK: - Factory methods (ViewModel không dùng chung)

@@ -162,8 +162,9 @@ final class EmbedServer {
         }
 
         let autoPlay = query["autoplay"] == "1"
+        let startSeconds = Int(query["t"] ?? "") ?? 0
 
-        let html = Self.playerHTML(videoID: videoID, autoPlay: autoPlay)
+        let html = Self.playerHTML(videoID: videoID, autoPlay: autoPlay, startSeconds: startSeconds)
         return (200, Data(html.utf8), "text/html; charset=utf-8")
     }
 
@@ -178,8 +179,12 @@ final class EmbedServer {
     /// Dùng YouTube IFrame API để nhận sự kiện `onError` (mã 2, 5, 100,
     /// 101, 150) và gửi về app qua `window.webkit.messageHandlers.playerError`
     /// → giúp UI phát hiện video bị cấm nhúng và chạy Smart Fallback.
-    private static func playerHTML(videoID: String, autoPlay: Bool) -> String {
+    /// Đồng thời hỗ trợ:
+    /// - `t=<giây>`: bắt đầu phát từ vị trí (tiếp tục xem).
+    /// - `window.webkit.messageHandlers.playerReady` khi player sẵn sàng.
+    private static func playerHTML(videoID: String, autoPlay: Bool, startSeconds: Int) -> String {
         let autoplay = autoPlay ? "1" : "0"
+        let startParam = startSeconds > 0 ? "start: \(startSeconds)," : ""
 
         return """
         <!DOCTYPE html>
@@ -210,9 +215,24 @@ final class EmbedServer {
                     playsinline: 1,
                     rel: 0,
                     controls: 1,
-                    modestbranding: 1
+                    modestbranding: 1,
+                    \(startParam)
+                    origin: location.origin
                 },
                 events: {
+                    onReady: function() {
+                        if (window.webkit && window.webkit.messageHandlers &&
+                            window.webkit.messageHandlers.playerReady) {
+                            window.webkit.messageHandlers.playerReady.postMessage('ready');
+                        }
+                    },
+                    onStateChange: function(event) {
+                        // Phát (1) → gửi thời gian hiện tại định kỳ để app
+                        // ghi nhận "tiếp tục xem".
+                        if (event.data === 1) {
+                            startTimeReport();
+                        }
+                    },
                     onError: function(event) {
                         if (window.webkit && window.webkit.messageHandlers &&
                             window.webkit.messageHandlers.playerError) {
@@ -221,6 +241,18 @@ final class EmbedServer {
                     }
                 }
             });
+        }
+
+        var timeReportTimer = null;
+        function startTimeReport() {
+            if (timeReportTimer) return;
+            timeReportTimer = setInterval(function() {
+                if (player && player.getCurrentTime &&
+                    window.webkit && window.webkit.messageHandlers &&
+                    window.webkit.messageHandlers.playerTime) {
+                    window.webkit.messageHandlers.playerTime.postMessage(player.getCurrentTime());
+                }
+            }, 1000);
         }
         </script>
         </body>
