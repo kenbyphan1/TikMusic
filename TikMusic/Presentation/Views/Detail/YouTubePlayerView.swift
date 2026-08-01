@@ -173,8 +173,8 @@ struct YouTubePlayerView: UIViewRepresentable {
             case "playerReady":
                 isPlayerReady = true
                 // Nếu video cần phát khi hiển thị (isActive) thì phát sau khi ready.
-                if loadedIsActive && !loadedAutoPlay {
-                    setActive(true, into: message.webView)
+                if loadedIsActive && !loadedAutoPlay, let webView = message.webView {
+                    setActive(true, into: webView)
                 }
                 onPlayerReady?()
             case "playerTime":

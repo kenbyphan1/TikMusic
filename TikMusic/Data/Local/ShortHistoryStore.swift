@@ -24,7 +24,7 @@ final class ShortHistoryStore {
         let id: String
         let short: ShortVideo
         let playedAt: Date
-        let lastPlayedSeconds: Double
+        var lastPlayedSeconds: Double
     }
 
     /// Container lưu trong file (để mở rộng trong tương lai).
