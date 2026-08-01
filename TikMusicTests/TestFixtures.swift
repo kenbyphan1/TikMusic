@@ -124,6 +124,44 @@ enum TestFixtures {
 
     static var videosResponseData: Data { Data(videosResponseJSON.utf8) }
 
+    // MARK: - Video status response (part=status)
+
+    /// Dữ liệu response `part=status` với các video embeddable được chỉ định.
+    static func videoStatusResponseJSON(embeddableIDs: [String]) -> String {
+        let items = embeddableIDs.map { id in
+            """
+            {
+              "kind": "youtube#video",
+              "id": "\(id)",
+              "status": {
+                "uploadStatus": "processed",
+                "privacyStatus": "public",
+                "license": "youtube",
+                "embeddable": true,
+                "publicStatsViewable": true,
+                "madeForKids": false
+              }
+            }
+            """
+        }.joined(separator: ",")
+
+        return """
+        {
+          "kind": "youtube#videoListResponse",
+          "etag": "status-etag",
+          "pageInfo": {
+            "totalResults": \(items.isEmpty ? 0 : embeddableIDs.count),
+            "resultsPerPage": 1
+          },
+          "items": [\(items)]
+        }
+        """
+    }
+
+    static func videoStatusResponseData(embeddableIDs: [String]) -> Data {
+        Data(videoStatusResponseJSON(embeddableIDs: embeddableIDs).utf8)
+    }
+
     // MARK: - Error response (quota exceeded)
 
     static let quotaErrorJSON = """

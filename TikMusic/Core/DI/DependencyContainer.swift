@@ -23,6 +23,9 @@ final class DependencyContainer {
     /// Lịch sử tìm kiếm cục bộ.
     let searchHistoryStore: SearchHistoryStore
 
+    /// Cache video thay thế (Smart Fallback).
+    let playbackCacheStore: PlaybackCacheStore
+
     // MARK: - Repositories
 
     /// Repository video từ YouTube Data API.
@@ -40,6 +43,7 @@ final class DependencyContainer {
     let searchVideosUseCase: SearchVideosUseCase
     let playlistUseCase: PlaylistUseCase
     let favoritesUseCase: FavoritesUseCase
+    let videoFallbackUseCase: VideoFallbackUseCase
 
     // MARK: - ViewModels dùng chung (giữ state xuyên các tab)
 
@@ -55,6 +59,7 @@ final class DependencyContainer {
         let apiKeyProvider = APIKeyProvider()
         let colorSchemeManager = ColorSchemeManager()
         let searchHistoryStore = SearchHistoryStore()
+        let playbackCacheStore = PlaybackCacheStore(store: JSONFileStore(fileName: "playback-cache.json"))
 
         // Networking
         let apiClient = APIClient(session: URLSession.shared)
@@ -69,6 +74,10 @@ final class DependencyContainer {
         let searchVideosUseCase = SearchVideosUseCase(repository: videoRepository)
         let playlistUseCase = PlaylistUseCase(repository: playlistRepository)
         let favoritesUseCase = FavoritesUseCase(repository: favoritesRepository)
+        let videoFallbackUseCase = VideoFallbackUseCase(
+            repository: videoRepository,
+            cacheStore: playbackCacheStore
+        )
 
         // ViewModels
         let homeViewModel = HomeViewModel(
@@ -91,6 +100,7 @@ final class DependencyContainer {
         self.apiKeyProvider = apiKeyProvider
         self.colorSchemeManager = colorSchemeManager
         self.searchHistoryStore = searchHistoryStore
+        self.playbackCacheStore = playbackCacheStore
         self.videoRepository = videoRepository
         self.playlistRepository = playlistRepository
         self.favoritesRepository = favoritesRepository
@@ -98,6 +108,7 @@ final class DependencyContainer {
         self.searchVideosUseCase = searchVideosUseCase
         self.playlistUseCase = playlistUseCase
         self.favoritesUseCase = favoritesUseCase
+        self.videoFallbackUseCase = videoFallbackUseCase
         self.homeViewModel = homeViewModel
         self.searchViewModel = searchViewModel
         self.playlistListViewModel = playlistListViewModel
@@ -113,7 +124,8 @@ final class DependencyContainer {
             video: video,
             videoRepository: videoRepository,
             favoritesUseCase: favoritesUseCase,
-            playlistUseCase: playlistUseCase
+            playlistUseCase: playlistUseCase,
+            fallbackUseCase: videoFallbackUseCase
         )
     }
 

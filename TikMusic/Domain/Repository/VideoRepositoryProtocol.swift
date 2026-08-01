@@ -26,4 +26,10 @@ protocol VideoRepositoryProtocol: Sendable {
     /// - Parameter videoID: ID video trên YouTube.
     /// - Returns: `MusicVideo` đầy đủ thông tin.
     func fetchVideoDetail(videoID: String) async throws -> MusicVideo
+
+    /// Lọc ra những video có thể nhúng (embeddable) từ danh sách ID.
+    ///
+    /// - Parameter ids: danh sách ID video cần kiểm tra.
+    /// - Returns: danh sách ID video embeddable được.
+    func filterEmbeddable(ids: [String]) async throws -> [String]
 }

@@ -3,11 +3,10 @@ import WebKit
 
 /// Trình phát YouTube nhúng (embed) dựa trên WKWebView.
 ///
-/// Không cần SDK của YouTube. Trang embed được phục vụ từ `EmbedServer`
-/// chạy trên `http://127.0.0.1:<port>` — một origin HTTP thật — nên
-/// WKWebView tự gắn header `Referer` hợp lệ khi iframe gọi YouTube.
-/// Nhờ đó tránh được lỗi 153 "Video player configuration error" và
-/// 152-4 "This video is not available" trên iOS.
+/// Trang embed được phục vụ từ `EmbedServer` (origin `http://127.0.0.1`)
+/// nên WKWebView gửi đúng `Referer` — tránh lỗi 153/152-4. Khi video bị
+/// chủ kênh cấm nhúng (mã lỗi 101/150), player gửi sự kiện về app qua
+/// `playerError` để UI chạy Smart Fallback.
 struct YouTubePlayerView: UIViewRepresentable {
 
     /// ID video trên YouTube.
@@ -16,10 +15,17 @@ struct YouTubePlayerView: UIViewRepresentable {
     /// Tự động phát khi hiển thị.
     var autoPlay: Bool = false
 
+    /// Callback khi player gặp lỗi (mã lỗi YouTube: 2, 5, 100, 101, 150).
+    var onPlayerError: ((Int) -> Void)?
+
     func makeUIView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
         configuration.allowsInlineMediaPlayback = true
         configuration.mediaTypesRequiringUserActionForPlayback = []
+
+        let userContentController = WKUserContentController()
+        userContentController.add(context.coordinator, name: "playerError")
+        configuration.userContentController = userContentController
 
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.isOpaque = false
@@ -31,6 +37,7 @@ struct YouTubePlayerView: UIViewRepresentable {
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
+        context.coordinator.onPlayerError = onPlayerError
         context.coordinator.load(videoID: videoID, autoPlay: autoPlay, into: webView)
     }
 
@@ -38,11 +45,14 @@ struct YouTubePlayerView: UIViewRepresentable {
         Coordinator()
     }
 
-    /// Coordinator chịu trách nhiệm (re)load video và chờ server sẵn sàng.
-    final class Coordinator: NSObject, WKNavigationDelegate {
+    /// Coordinator nhận sự kiện từ JavaScript player và điều khiển web view.
+    final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         /// Video đã load gần nhất (tránh reload liên tục).
         private var loadedVideoID: String?
         private var loadedAutoPlay = false
+
+        /// Callback báo lỗi player (set từ updateUIView).
+        var onPlayerError: ((Int) -> Void)?
 
         func load(videoID: String, autoPlay: Bool, into webView: WKWebView) {
             guard loadedVideoID != videoID || loadedAutoPlay != autoPlay else { return }
@@ -67,6 +77,20 @@ struct YouTubePlayerView: UIViewRepresentable {
             guard let url = URL(string: path, relativeTo: baseURL) else { return }
             webView.load(URLRequest(url: url))
         }
+
+        // MARK: - WKScriptMessageHandler
+
+        func userContentController(
+            _ userContentController: WKUserContentController,
+            didReceive message: WKScriptMessage
+        ) {
+            guard message.name == "playerError",
+                  let code = message.body as? Int else { return }
+            AppLogger.info("YouTubePlayer báo lỗi \(code) cho video \(loadedVideoID ?? "")")
+            onPlayerError?(code)
+        }
+
+        // MARK: - WKNavigationDelegate
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
             AppLogger.error("YouTubePlayer load lỗi: \(error.localizedDescription)")

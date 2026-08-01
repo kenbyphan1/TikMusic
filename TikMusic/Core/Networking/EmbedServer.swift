@@ -174,6 +174,10 @@ final class EmbedServer {
     // MARK: - HTML
 
     /// Trang nhúng iframe YouTube (được load từ origin HTTP thật).
+    ///
+    /// Dùng YouTube IFrame API để nhận sự kiện `onError` (mã 2, 5, 100,
+    /// 101, 150) và gửi về app qua `window.webkit.messageHandlers.playerError`
+    /// → giúp UI phát hiện video bị cấm nhúng và chạy Smart Fallback.
     private static func playerHTML(videoID: String, autoPlay: Bool) -> String {
         let autoplay = autoPlay ? "1" : "0"
 
@@ -186,18 +190,39 @@ final class EmbedServer {
         <meta name="referrer" content="strict-origin-when-cross-origin">
         <style>
         html, body { margin: 0; padding: 0; background: #000; height: 100%; overflow: hidden; }
-        #player { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
+        #player { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         </style>
         </head>
         <body>
-        <iframe
-          id="player"
-          frameborder="0"
-          allowfullscreen
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          referrerpolicy="strict-origin-when-cross-origin"
-          src="https://www.youtube.com/embed/\(videoID)?autoplay=\(autoplay)&playsinline=1&rel=0&modestbranding=1&controls=1"
-        ></iframe>
+        <div id="player"></div>
+        <script>
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        var player;
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                videoId: '\(videoID)',
+                playerVars: {
+                    autoplay: \(autoplay),
+                    playsinline: 1,
+                    rel: 0,
+                    controls: 1,
+                    modestbranding: 1
+                },
+                events: {
+                    onError: function(event) {
+                        if (window.webkit && window.webkit.messageHandlers &&
+                            window.webkit.messageHandlers.playerError) {
+                            window.webkit.messageHandlers.playerError.postMessage(event.data);
+                        }
+                    }
+                }
+            });
+        }
+        </script>
         </body>
         </html>
         """

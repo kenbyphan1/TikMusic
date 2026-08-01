@@ -72,9 +72,25 @@ final class YouTubeRepositoryTests: XCTestCase {
         XCTAssertEqual(session.requestCount, 1)
     }
 
-    /// Thiếu API Key → ném APIError.missingAPIKey.
-    func testMissingAPIKeyThrows() async {
+    /// filterEmbeddable chỉ trả về những video có status.embeddable == true.
+    func testFilterEmbeddable() async throws {
+        let statusData = TestFixtures.videoStatusResponseData(embeddableIDs: ["abc123"])
         let session = MockNetworkSession { _ in
+            (statusData, HTTPTestResponse.make(statusCode: 200))
+        }
+
+        let provider = makeProvider(withKey: "TEST_API_KEY")
+        let client = APIClient(session: session, maxRetries: 0)
+        let repository = YouTubeVideoRepository(client: client, apiKeyProvider: provider)
+
+        let embeddable = try await repository.filterEmbeddable(ids: ["abc123", "xyz999"])
+
+        XCTAssertEqual(embeddable, ["abc123"], "Chỉ trả về video embeddable được")
+        XCTAssertEqual(session.requestCount, 1)
+    }
+
+    /// Thiếu API Key → ném APIError.missingAPIKey.
+    func testMissingAPIKeyThrows() async {        let session = MockNetworkSession { _ in
             (Data(), HTTPTestResponse.make(statusCode: 200))
         }
 

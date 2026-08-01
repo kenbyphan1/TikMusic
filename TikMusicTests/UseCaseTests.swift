@@ -4,6 +4,7 @@ import XCTest
 /// Mock VideoRepository dùng trong test.
 final class MockVideoRepository: VideoRepositoryProtocol, @unchecked Sendable {
     var result: Result<VideoPage, Error> = .success(.empty)
+    var embeddableIDs: [String] = []
     private(set) var receivedQuery: String?
     private(set) var receivedCategory: MusicCategory?
     private(set) var receivedPageToken: String?
@@ -22,6 +23,10 @@ final class MockVideoRepository: VideoRepositoryProtocol, @unchecked Sendable {
 
     func fetchVideoDetail(videoID: String) async throws -> MusicVideo {
         throw APIError.invalidResponse
+    }
+
+    func filterEmbeddable(ids: [String]) async throws -> [String] {
+        Set(ids).intersection(embeddableIDs).map { $0 }
     }
 }
 
@@ -189,5 +194,70 @@ final class UseCaseTests: XCTestCase {
         try useCase.removeAll()
 
         XCTAssertTrue(try useCase.fetchAll().isEmpty)
+    }
+
+    // MARK: - VideoFallbackUseCase
+
+    func testFallbackFindsEmbeddableAlternativeAndCaches() async throws {
+        let repository = MockVideoRepository()
+        let original = MusicVideo(
+            id: "goc",
+            title: "Perfect (Official Video)",
+            channelTitle: "Ed Sheeran",
+            duration: 263
+        )
+        let alternative = MusicVideo(id: "thay-the", title: "Perfect", channelTitle: "Ed Sheeran", duration: 260)
+        repository.result = .success(VideoPage(videos: [alternative], nextPageToken: nil))
+        repository.embeddableIDs = ["thay-the"]
+
+        let cacheStore = PlaybackCacheStore(store: JSONFileStore(inMemory: "test-cache.json"))
+        let useCase = VideoFallbackUseCase(repository: repository, cacheStore: cacheStore)
+
+        let found = try await useCase.findAlternative(for: original)
+
+        XCTAssertEqual(found?.id, "thay-the")
+        XCTAssertEqual(cacheStore.alternative(for: "goc")?.id, "thay-the", "Phải lưu vào cache")
+    }
+
+    func testFallbackPrefersClosestDuration() async throws {
+        let repository = MockVideoRepository()
+        let original = MusicVideo(id: "goc", title: "Hello", channelTitle: "Adele", duration: 400)
+        let cover = MusicVideo(id: "cover", title: "Hello Cover", channelTitle: "Fan", duration: 600)
+        let official = MusicVideo(id: "official", title: "Hello", channelTitle: "Adele", duration: 395)
+        repository.result = .success(VideoPage(videos: [cover, official], nextPageToken: nil))
+        repository.embeddableIDs = ["cover", "official"]
+
+        let cacheStore = PlaybackCacheStore(store: JSONFileStore(inMemory: "test-cache.json"))
+        let useCase = VideoFallbackUseCase(repository: repository, cacheStore: cacheStore)
+
+        let found = try await useCase.findAlternative(for: original)
+
+        XCTAssertEqual(found?.id, "official", "Phải chọn video có thời lượng gần nhất")
+    }
+
+    func testFallbackReturnsNilWhenNothingEmbeddable() async throws {
+        let repository = MockVideoRepository()
+        let original = MusicVideo(id: "goc", title: "Hello", channelTitle: "Adele")
+        repository.result = .success(VideoPage(videos: [MusicVideo(id: "x", title: "X", channelTitle: "Y")], nextPageToken: nil))
+        repository.embeddableIDs = []
+
+        let cacheStore = PlaybackCacheStore(store: JSONFileStore(inMemory: "test-cache.json"))
+        let useCase = VideoFallbackUseCase(repository: repository, cacheStore: cacheStore)
+
+        let found = try await useCase.findAlternative(for: original)
+
+        XCTAssertNil(found)
+        XCTAssertNil(cacheStore.alternative(for: "goc"))
+    }
+
+    func testFallbackBuildQueryStripsSuffixes() {
+        XCTAssertEqual(
+            VideoFallbackUseCase.buildSearchQuery(for: MusicVideo(id: "a", title: "Perfect [Official Video]", channelTitle: "Ed Sheeran")),
+            "Perfect Ed Sheeran"
+        )
+        XCTAssertEqual(
+            VideoFallbackUseCase.buildSearchQuery(for: MusicVideo(id: "b", title: "Hello (Lyrics)", channelTitle: "")),
+            "Hello"
+        )
     }
 }

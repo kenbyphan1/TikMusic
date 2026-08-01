@@ -37,23 +37,37 @@ final class VideoDetailViewModel {
     /// Thông báo sau khi thêm vào playlist (nil = không hiển thị).
     private(set) var playlistMessage: String?
 
+    /// Video đang thực sự được phát (ban đầu là video gốc; có thể đổi sang
+    /// video thay thế khi video gốc bị cấm nhúng).
+    private(set) var playingVideo: MusicVideo = .empty
+
+    /// Đang tìm video thay thế.
+    private(set) var isFindingAlternative = false
+
+    /// Thông báo khi không tìm được video thay thế.
+    private(set) var fallbackMessage: String?
+
     // MARK: - Dependencies
 
     private let videoRepository: VideoRepositoryProtocol
     private let favoritesUseCase: FavoritesUseCase
     private let playlistUseCase: PlaylistUseCase
+    private let fallbackUseCase: VideoFallbackUseCase
 
     /// Khởi tạo ViewModel.
     init(
         video: MusicVideo,
         videoRepository: VideoRepositoryProtocol,
         favoritesUseCase: FavoritesUseCase,
-        playlistUseCase: PlaylistUseCase
+        playlistUseCase: PlaylistUseCase,
+        fallbackUseCase: VideoFallbackUseCase
     ) {
         self.video = video
         self.videoRepository = videoRepository
         self.favoritesUseCase = favoritesUseCase
         self.playlistUseCase = playlistUseCase
+        self.fallbackUseCase = fallbackUseCase
+        self.playingVideo = video
     }
 
     // MARK: - Public API
@@ -133,7 +147,42 @@ final class VideoDetailViewModel {
         playlistMessage = nil
     }
 
+    /// Xử lý lỗi player: nếu video bị cấm nhúng (101/150) thì tìm video thay thế.
+    ///
+    /// - Parameter errorCode: mã lỗi từ YouTube IFrame API
+    ///   (100 = không tìm thấy, 101/150 = cấm nhúng).
+    func handlePlayerError(_ errorCode: Int) {
+        let playableCodes: Set<Int> = [100, 101, 150]
+        guard playableCodes.contains(errorCode),
+              !isFindingAlternative,
+              playingVideo.id == video.id else {
+            return
+        }
+        findAlternative()
+    }
+
     // MARK: - Private
+
+    /// Tìm và phát video thay thế cho video gốc.
+    private func findAlternative() {
+        isFindingAlternative = true
+        fallbackMessage = nil
+
+        Task {
+            do {
+                guard let alternative = try await fallbackUseCase.findAlternative(for: video) else {
+                    fallbackMessage = "Không tìm được video thay thế. Hãy thử mở qua nút YouTube."
+                    isFindingAlternative = false
+                    return
+                }
+                playingVideo = alternative
+            } catch {
+                AppLogger.error("Fallback thất bại: \(error.localizedDescription)")
+                fallbackMessage = "Không tìm được video thay thế. Hãy thử mở qua nút YouTube."
+            }
+            isFindingAlternative = false
+        }
+    }
 
     /// Kiểm tra trạng thái yêu thích ban đầu.
     private func checkFavorite() {

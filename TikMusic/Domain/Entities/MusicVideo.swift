@@ -54,6 +54,9 @@ struct MusicVideo: Identifiable, Hashable, Codable, Sendable {
         URL(string: "https://www.youtube.com/embed/\(id)?playsinline=1")!
     }
 
+    /// Video rỗng (dùng cho state khởi tạo).
+    static let empty = MusicVideo(id: "", title: "", channelTitle: "")
+
     /// Khởi tạo đầy đủ (dùng trong mapper, test, preview).
     init(
         id: String,

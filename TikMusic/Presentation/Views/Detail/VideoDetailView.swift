@@ -66,9 +66,15 @@ struct VideoDetailView: View {
     private var playerSection: some View {
         ZStack {
             if isShowingPlayer {
-                YouTubePlayerView(videoID: video.id, autoPlay: true)
-                    .aspectRatio(16 / 9, contentMode: .fit)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                YouTubePlayerView(
+                    videoID: viewModel.playingVideo.id,
+                    autoPlay: true,
+                    onPlayerError: { code in
+                        viewModel.handlePlayerError(code)
+                    }
+                )
+                .aspectRatio(16 / 9, contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             } else {
                 CachedAsyncImage(
                     url: video.thumbnailHighURL ?? video.thumbnailURL
@@ -95,6 +101,33 @@ struct VideoDetailView: View {
             }
         }
         .frame(maxWidth: .infinity)
+        .overlay(alignment: .bottom) {
+            // Banner trạng thái fallback.
+            if isShowingPlayer, viewModel.isFindingAlternative {
+                fallbackBanner(
+                    symbol: "arrow.triangle.2.circlepath",
+                    text: "Đang tìm video thay thế..."
+                )
+            } else if isShowingPlayer, viewModel.playingVideo.id != video.id {
+                fallbackBanner(
+                    symbol: "checkmark.circle.fill",
+                    text: "Đang phát video thay thế"
+                )
+            } else if isShowingPlayer, let message = viewModel.fallbackMessage {
+                fallbackBanner(symbol: "exclamationmark.triangle.fill", text: message)
+            }
+        }
+    }
+
+    /// Banner nhỏ hiển thị trạng thái fallback phía dưới player.
+    private func fallbackBanner(symbol: String, text: String) -> some View {
+        Label(text, systemImage: symbol)
+            .font(.footnote.weight(.medium))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(.black.opacity(0.65), in: Capsule())
+            .padding(.bottom, 10)
     }
 
     // MARK: - Action row
@@ -349,6 +382,13 @@ struct VideoDetailView: View {
             ),
             playlistUseCase: PlaylistUseCase(
                 repository: PreviewData.previewPlaylistRepository
+            ),
+            fallbackUseCase: VideoFallbackUseCase(
+                repository: YouTubeVideoRepository(
+                    client: APIClient(session: URLSession.shared),
+                    apiKeyProvider: APIKeyProvider()
+                ),
+                cacheStore: PlaybackCacheStore(store: JSONFileStore(inMemory: "preview-cache.json"))
             )
         ))
     }

@@ -86,6 +86,23 @@ struct YouTubeVideoRepository: VideoRepositoryProtocol {
         return video
     }
 
+    /// Lọc ra những video embeddable được từ danh sách ID.
+    ///
+    /// Dùng `part=status` (rẻ hơn `part=snippet,statistics`), chỉ trả về ID
+    /// của những video có `status.embeddable == true`.
+    func filterEmbeddable(ids: [String]) async throws -> [String] {
+        guard !ids.isEmpty else { return [] }
+
+        let key = try apiKey()
+        let endpoint = YouTubeEndpoint.videoStatus(apiKey: key, ids: ids)
+        let response = try await client.send(endpoint, as: YouTubeVideosResponseDTO.self)
+
+        return (response.items ?? []).compactMap { item -> String? in
+            guard let id = item.id, item.status?.embeddable == true else { return nil }
+            return id
+        }
+    }
+
     // MARK: - Private
 
     /// Bổ sung lượt xem/lượt thích/thời lượng cho danh sách video.

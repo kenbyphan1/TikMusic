@@ -7,6 +7,10 @@ enum YouTubeEndpoint {
 
     /// Lấy chi tiết video theo danh sách ID (bao gồm thống kê, thời lượng).
     case videos(apiKey: String, ids: [String])
+
+    /// Kiểm tra trạng thái video (riêng `part=status` để biết video có
+    /// embeddable không — dùng cho Smart Fallback).
+    case videoStatus(apiKey: String, ids: [String])
 }
 
 // MARK: - APIEndpoint
@@ -22,7 +26,7 @@ extension YouTubeEndpoint: APIEndpoint {
         switch self {
         case .search:
             return "/youtube/v3/search"
-        case .videos:
+        case .videos, .videoStatus:
             return "/youtube/v3/videos"
         }
     }
@@ -56,6 +60,13 @@ extension YouTubeEndpoint: APIEndpoint {
             return [
                 URLQueryItem(name: "key", value: apiKey),
                 URLQueryItem(name: "part", value: "snippet,contentDetails,statistics"),
+                URLQueryItem(name: "id", value: ids.joined(separator: ",")),
+            ]
+
+        case .videoStatus(let apiKey, let ids):
+            return [
+                URLQueryItem(name: "key", value: apiKey),
+                URLQueryItem(name: "part", value: "status"),
                 URLQueryItem(name: "id", value: ids.joined(separator: ",")),
             ]
         }

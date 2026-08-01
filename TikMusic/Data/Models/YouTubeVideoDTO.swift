@@ -83,6 +83,17 @@ struct YouTubeVideoItemDTO: Decodable {
     let snippet: YouTubeSnippetDTO?
     let contentDetails: YouTubeContentDetailsDTO?
     let statistics: YouTubeStatisticsDTO?
+    let status: YouTubeStatusDTO?
+}
+
+/// Trạng thái video (`part=status`) — dùng để biết video có embeddable không.
+struct YouTubeStatusDTO: Decodable {
+    let uploadStatus: String?
+    let privacyStatus: String?
+    let license: String?
+    let embeddable: Bool?
+    let publicStatsViewable: Bool?
+    let madeForKids: Bool?
 }
 
 /// Thông tin chi tiết nội dung video (thời lượng ISO 8601).
